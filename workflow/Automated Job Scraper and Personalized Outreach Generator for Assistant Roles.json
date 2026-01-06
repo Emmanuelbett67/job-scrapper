@@ -1,0 +1,620 @@
+{
+  "name": "Automated Job Scraper and Personalized Outreach Generator for Assistant Roles",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 4
+            }
+          ]
+        }
+      },
+      "id": "08dc456b-c20c-4e5a-8ff1-759be9864132",
+      "name": "Daily Job Scraper Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -5104,
+        2672
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "jobBoardUrl",
+              "value": "https://remoteok.com/api",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "searchKeywords",
+              "value": "Executive Assistant, Admin Assistant, Administrative Assistant, Virtual Assistant, Personal Assistant",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "maxJobsToProcess",
+              "value": 250,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0584605b-640b-47ca-bcdb-aac24485b888",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5072,
+        3104
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Workflow Configuration').item.json.jobBoardUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "infoMessage": "Note: The Remote OK API returns an array where the first item is metadata and subsequent items are job postings"
+      },
+      "id": "a4b276e4-6189-4b8c-9604-383348993839",
+      "name": "Fetch Job Board Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -4720,
+        2752
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "jobTitle",
+              "value": "={{ $json.position || 'No title' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "companyName",
+              "value": "={{ $json.company || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "location",
+              "value": "={{ $json.location || 'Remote' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "jobUrl",
+              "value": "={{ 'https://remoteok.com/remote-jobs/' + $json.slug }}",
+              "type": "string"
+            },
+            {
+              "id": "id-5",
+              "name": "jobDescription",
+              "value": "={{ $json.description || 'No description' }}",
+              "type": "string"
+            },
+            {
+              "id": "id-6",
+              "name": "jobDescriptionClean",
+              "value": "={{ $json.description.replace(/<[^>]*>/g, '').replace(/\\n/g, ' ').trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c82e320d-6195-4711-91ae-b37fb2fe00c5",
+      "name": "Structure Job Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4400,
+        3104
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.1,
+          "timeout": 60000
+        }
+      },
+      "id": "9845581a-874b-4205-93de-5fc3de3ddc5e",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -4112,
+        3104
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "dhE6hOU2Vv5FNoYs",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n\t\t\"isRemote\": {\n\t\t\t\"type\": \"boolean\",\n\t\t\t\"description\": \"Whether the job is remote or allows remote work\"\n\t\t},\n\t\t\"isEnglishSpeaking\": {\n\t\t\t\"type\": \"boolean\",\n\t\t\t\"description\": \"Whether the job requires English language skills\"\n\t\t},\n\t\t\"isRelevant\": {\n\t\t\t\"type\": \"boolean\",\n\t\t\t\"description\": \"Whether the job is relevant for Executive Assistant or Admin Assistant role\"\n\t\t},\n\t\t\"reasoning\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Brief explanation of the decision\"\n\t\t}\n\t},\n\t\"required\": [\"isRemote\", \"isEnglishSpeaking\", \"isRelevant\", \"reasoning\"]\n}"
+      },
+      "id": "7c04cf46-c9b4-4628-95fd-92d01250c219",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -3872,
+        3104
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze this job posting:\n\nJob Title: {{ $('Structure Job Data').item.json.jobTitle }}\nCompany: {{ $('Structure Job Data').item.json.companyName }}\nLocation: {{ $('Structure Job Data').item.json.location }}\nJob Description: {{ $('Structure Job Data').item.json.jobDescription }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a job posting classifier. Analyze job postings and return ONLY valid JSON with these boolean fields: isRemote, isEnglishSpeaking, isRelevant, and reasoning.\n\nBe strict in your analysis:\n- Mark isRemote=true only if the job explicitly mentions remote work, work from home, WFH, distributed, or location flexibility\n- Mark isEnglishSpeaking=true if English language skills are required or strongly implied\n- Mark isRelevant=true only for administrative and assistant roles such as: Executive Assistant, Administrative Assistant, Virtual Assistant, Personal Assistant, EA, AA, VA, Office Manager, Chief of Staff, or Operations Coordinator\n\nReturn your analysis in the structured JSON format."
+        }
+      },
+      "id": "7b75ad07-bb3d-4f26-9ce9-050a7ca3d74c",
+      "name": "Validate Job Criteria",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -4112,
+        2752
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $json.output.isRemote }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            },
+            {
+              "id": "id-2",
+              "leftValue": "={{ $json.output.isEnglishSpeaking }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            },
+            {
+              "id": "id-3",
+              "leftValue": "={{ $json.output.isRelevant }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f15904d5-02be-44ad-82cf-585f783a7838",
+      "name": "Filter Valid Jobs",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        -3664,
+        2752
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "id": "9b74d0df-1199-47c9-a022-8d80622b6b1e",
+      "name": "OpenAI Chat Model for Outreach",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -3328,
+        3312
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "7LyHCAu5MJpfnrqU",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate a personalized outreach message for this job:\n\nJob Title: {{ $('Structure Job Data').item.json.jobTitle }}\nCompany: {{ $('Structure Job Data').item.json.companyName }}\nLocation: {{ $('Structure Job Data').item.json.location }}\nJob Description: {{ $('Structure Job Data').item.json.jobDescription }}",
+        "options": {
+          "systemMessage": "You are an expert career coach specializing in Executive Assistant, Administrative Assistant, Virtual Assistant, and Personal Assistant positions.\n\nYour role is to create personalized, professional outreach messages that are:\n- Concise (150-200 words)\n- Highlight relevant EA/AA/VA skills\n- Show genuine enthusiasm for the specific role\n- Include clear calls-to-action\n- Reference specific details from the job description\n\nIMPORTANT: Do NOT include any P.S. sections or references to codes like RODguMTk4Ljk5LjE0Mw== or similar tags in your outreach messages. These are spam prevention markers from job boards and should never appear in professional outreach.\n\nCreate a professional message that demonstrates understanding of the role and showcases relevant administrative and support skills."
+        }
+      },
+      "id": "27ef526c-bed2-492f-8058-c2216512c4df",
+      "name": "Generate Outreach Message",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -3312,
+        2800
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "Job Posting URL",
+              "value": "={{ $('Structure Job Data').item.json.jobUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "Job Title",
+              "value": "={{ $('Structure Job Data').item.json.jobTitle }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "Company Name",
+              "value": "={{ $('Structure Job Data').item.json.companyName }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "Location",
+              "value": "={{ $('Structure Job Data').item.json.location }}",
+              "type": "string"
+            },
+            {
+              "id": "id-5",
+              "name": "Job Description",
+              "value": "={{ $('Structure Job Data').item.json.jobDescriptionClean }}",
+              "type": "string"
+            },
+            {
+              "id": "id-6",
+              "name": "Outreach Message",
+              "value": "={{ $('Generate Outreach Message').item.json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "id-7",
+              "name": "Date Added",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "940d8202-30d6-4c15-a689-c2337436ee9b",
+      "name": "Prepare Google Sheets Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3040,
+        3088
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1p8ndz_iyxeY51JJrPnRqbsIjGktdd5mKbZoGywjUK5w"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "d9a56fb8-88da-4232-b008-8889a5d5085e",
+      "name": "Save to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2784,
+        3088
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "X94z7XQZcFAFw4aW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "7d4bae6c-3d76-4103-8bf4-5e6dced55d31",
+      "name": "Combine Job and Validation Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3456,
+        3088
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ae467bed-6bec-41f4-bbe6-441a3e721f02",
+      "name": "Filter Job Postings Array",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        -4704,
+        3104
+      ]
+    }
+  ],
+  "pinData": {
+    "Daily Job Scraper Schedule": [
+      {
+        "json": {
+          "timestamp": "2026-01-06T11:29:26.007+03:00",
+          "Readable date": "January 6th 2026, 11:29:26 am",
+          "Readable time": "11:29:26 am",
+          "Day of week": "Tuesday",
+          "Year": "2026",
+          "Month": "January",
+          "Day of month": "06",
+          "Hour": "11",
+          "Minute": "29",
+          "Second": "26",
+          "Timezone": "Africa/Nairobi (UTC+03:00)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Daily Job Scraper Schedule": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Fetch Job Board Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structure Job Data": {
+      "main": [
+        [
+          {
+            "node": "Validate Job Criteria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Validate Job Criteria",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Validate Job Criteria",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Job Criteria": {
+      "main": [
+        [
+          {
+            "node": "Filter Valid Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model for Outreach": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Outreach Message",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Outreach Message": {
+      "main": [
+        [
+          {
+            "node": "Prepare Google Sheets Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Google Sheets Data": {
+      "main": [
+        [
+          {
+            "node": "Save to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Job Board Data": {
+      "main": [
+        [
+          {
+            "node": "Filter Job Postings Array",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Valid Jobs": {
+      "main": [
+        [
+          {
+            "node": "Combine Job and Validation Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Job and Validation Data": {
+      "main": [
+        [
+          {
+            "node": "Generate Outreach Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Job Postings Array": {
+      "main": [
+        [
+          {
+            "node": "Structure Job Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "8ffacbb3-d049-4782-9e03-acd4dd95ceec",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "65d94050245ba0202eaca3dfcd2aa41c877fc7e39de7324b58bc198211e80776"
+  },
+  "id": "2KSPbsNk0U6y2ahW",
+  "tags": []
+}
