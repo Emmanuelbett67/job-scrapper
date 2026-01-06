@@ -222,8 +222,6 @@ If you hit API rate limits:
 ---
 
 ## Architecture Overview
-
-**Workflow Flow:**
 ```mermaid
 graph TD
     A[Schedule Trigger (Daily 9 AM)] --> B[Fetch Jobs from RemoteOK API]
