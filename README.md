@@ -226,13 +226,13 @@ If you hit API rate limits:
 **Workflow Flow:**
 ```mermaid
 graph TD
-    A[Schedule Trigger (Daily 9 AM)] --> B[Fetch Jobs from RemoteOK API]
+    A[Schedule Trigger<br/>Daily 9 AM] --> B[Fetch Jobs from RemoteOK API]
     B --> C[Filter Out Metadata]
     C --> D[Extract Job Details]
     D --> E[AI Validation]
     E --> F[Filter Valid Jobs]
     F --> G[Clean HTML from Descriptions]
-    G --> H[Generate Personalized Outreach Messages (AI)]
+    G --> H[Generate Personalized Outreach Messages]
     H --> I[Check for Duplicates]
     I --> J[Save to Google Sheets]
 ```
