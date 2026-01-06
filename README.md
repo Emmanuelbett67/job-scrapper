@@ -17,8 +17,8 @@ This workflow uses n8n's built-in **Schedule Trigger** node:
    - Modify time of day
    - Update timezone if needed
 4. Save the workflow
+<img width="1475" height="873" alt="image" src="https://github.com/user-attachments/assets/94009811-4896-46a6-9c57-34b721ebee80" />
 
-> **Note:** Include a screenshot of the Schedule Trigger node configuration.
 
 ### Alternative: Manual Execution
 - Click "Execute Workflow" button in n8n to run on-demand
