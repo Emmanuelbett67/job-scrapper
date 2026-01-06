@@ -222,7 +222,7 @@ If you hit API rate limits:
 ---
 
 ## Architecture Overview
-```mermaid
+
 graph TD
     A[Schedule Trigger (Daily 9 AM)] --> B[Fetch Jobs from RemoteOK API]
     B --> C[Filter Out Metadata]
@@ -233,7 +233,6 @@ graph TD
     G --> H[Generate Personalized Outreach Messages (AI)]
     H --> I[Check for Duplicates]
     I --> J[Save to Google Sheets]
-```
 
 **AI Models Used:**
 - **GPT-4o-mini:** Job validation (fast, cost-effective)
